@@ -1,0 +1,15 @@
+*.pyc
+*~
+*.orig
+*.*#
+*.bak
+*.gz
+*.directory
+*.m
+*.sh
+*/src
+*/susp
+/swalign
+/orig
+*.txt
+*PAN*
