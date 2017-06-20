@@ -21,8 +21,8 @@ from numpy import mean
 "TODO: make test > python3 02.5_nonParaphrasedCasesGeneration.py test/Non-pairs.test test/True-corpus.test test/susp/ test/src/ test/out/"
 
 class CorpusChange:
-    def __init__(self, nonPairTextFile, TrueCasesCorpusFile, suspdir, srcdir, N):
-        self.pairFile = nonPairTextFile         #list of text pairs path file 
+    def __init__(self, nonParaphTextPairList, TrueCasesCorpusFile, suspdir, srcdir, N):
+        self.pairFile = nonParaphTextPairList         #list of text pairs path file 
         self.trueCase = TrueCasesCorpusFile     #positive cases path file
         self.suspdir = suspdir
         self.srcdir = srcdir                    
@@ -30,8 +30,8 @@ class CorpusChange:
         self.CWM = DataFrame([])                #Common Word Matrix
         self.N = N
         self.M = 2
-        self.bestNText = defaultdict(list)
-        self.TrueCases = pd.read_csv(TrueCasesCorpusFile,names=['FragID','suspf','srcf','class'], delimiter='\t')
+        self.bestNNonParaphTextPairID = defaultdict(list)
+        self.TrueCases = pd.read_csv(TrueCasesCorpusFile,names=['fragPairID','suspf','srcf','class'], delimiter='\t')
         self.TextPairs = pd.read_csv(self.pairFile,names=['susp','src'],delimiter=' ')
         self.suspf = ''
         self.srcf = ''
@@ -42,6 +42,7 @@ class CorpusChange:
     def loadCWMatrix(self,CWM):
         "Load the current Common Word Matrix"
         if len(CWM) == 0:
+            print('Generating Matrix of Common Words.\n')
             self.CWM = matrixCommonWords(self.TextPairs,self.TrueCases)
             print('Matrix of Common Words generated.\n')
         else:
@@ -51,130 +52,130 @@ class CorpusChange:
 
     def bestNTextsPerTrueCase(self):
         """
-        Get best N text pair per true case
+        Get by True Case the best N IDs of non paraphrased text pair.
         """
         
-        for TrueCase in self.CWM.index:
-            for x,(textPairCase,value) in enumerate(self.CWM.xs(TrueCase).sort_values(ascending=False).iteritems()):
+        for trueCase in self.CWM.index:
+            for x,(NonParaphTextPairID,value) in enumerate(self.CWM.xs(trueCase).sort_values(ascending=False).iteritems()):
                 if x < self.N:
-                    self.bestNText[TrueCase].append(int(textPairCase)) #textPairCase number is returned as str.
+                    self.bestNNonParaphTextPairID[trueCase].append(int(NonParaphTextPairID)) #textPairCase id is returned as str.
 
         #TODO: filtrar que cada par de textos se use solamente M veces
 
         print('Best N Text per True Case generated.\n')
-        return self.bestNText
+        return self.bestNNonParaphTextPairID
 
     def getFalseCases(self):
+        """Get False cases or non paraphrased text pair cases"""
+        print('Generating non paraphrased cases. This could take some hours depending on true cases amount')
         #for every True case:
-        for TRUECaseID in self.bestNText.keys():
+        for TRUECaseID in self.bestNNonParaphTextPairID.keys():
             # for every doc in True case
-            for DOC in self.bestNText[TRUECaseID]:
-                #Init object getBestFrag
-
-                ID,self.bestEval = self.bestFragPerTrueCase(DOC, TRUECaseID) #get best frag of a DOC per True Case
-            
-            #Append new False case to corpus
-            appendCorpusCase(ID,self.bestEval)
-            input()
+            for NonParaphTextPairID in self.bestNNonParaphTextPairID[TRUECaseID]:
+                #print('TRUECaseID',TRUECaseID,'NonParaphTextPairID',NonParaphTextPairID)
+                #get best frag of a NonParaphTextPairID per True Case
+                ID,self.FragmentTexts = self.bestFrag(TRUECaseID, NonParaphTextPairID)
+                
+                #Append new False case to corpus
+                appendCorpusCase(ID,self.FragmentTexts)
         return
 
-    def bestFragPerTrueCase(self, DOC, idTRUECase):
-        """Return the best fragmet per textCase by TrueCase"""
-        print('bestFragPerTrueCase')
-        
-        self.suspf = self.TrueCases.suspf[DOC]
-        self.srcf = self.TrueCases.srcf[DOC]
-        idx = int(idTRUECase)      
+    def bestFrag(self, TRUECaseID, NonParaphTextPairID):
+        """
+        Based on a True Case ID calc its correspondent best chunks (src&susp) inside TextPair[ID].values file names.
+        Return the ID for the new FalseCase based on susp & src names numbers (PAN-PC original file names IDs).
+        """
+
+        #Load true case susp & src text fragments
+        self.suspf = self.TrueCases.suspf[TRUECaseID]
+        self.srcf = self.TrueCases.srcf[TRUECaseID]
+        #Load susp & src file names
+        idx = int(NonParaphTextPairID)      
         susp = self.TextPairs.susp[idx]
         src = self.TextPairs.src[idx]
-        
+
         #Susp
-        self.fragMatrix = self.getFragFrom(0,susp,idx)
+        self.fragMatrix = self.getFragFrom(susp,idx)
         self.featureFragMatrix = self.getFeatureVector(self.suspf)
         x,y = self.bestValue()
         self.bestEval['susp'] = self.fragMatrix[y][x]
 
         #Src
-        self.fragMatrix = self.getFragFrom(1,src,idx)
+        self.fragMatrix = self.getFragFrom(src,idx)
         self.featureFragMatrix = self.getFeatureVector(self.srcf)
         x,y = self.bestValue()
         self.bestEval['src'] = self.fragMatrix[y][x]
 
         self.count+=1
-        #Create pair fragment case id
+        #Generate non paraphrased pair fragment case id
         newCaseID = str(self.count)+self.TextPairs.susp[idx][-9:-4]+self.TextPairs.src[idx][-9:-4]
-        print('*******************************************\n',self.suspf)
-        print('*******************************************\n',self.srcf,'******************************\n')
-        print('*******************************************\n',self.bestEval['susp'])
-        print('*******************************************\n',self.bestEval['src'],'******************************\n')
-        input()
-        return newCaseID
+        #~ print('**********************\n',susp,src,'\n',self.suspf)
+        #~ print('**********************\n',self.srcf,'**********************\n')
+        #~ print('**********************\n',self.bestEval['susp'])
+        #~ print('**********************\n',self.bestEval['src'],'**********************\n')
+        return newCaseID, self.bestEval
 
-    def getFragFrom(self, file_type, text,idx):
-        "Construct & return a matrix compose by every possible fragment made by aligned sentences"
-        print('getFragFrom')
-
+    def getFragFrom(self, textName,idx):
+        """
+        Construct & return a matrix compose by every possible chunk made by contiguous sentences.
+        The algorithm is designed to work with aligned texts. See the results of 02.2c-Jaccard-Align-Preproc-to-Original-Sent.ipynb
+        """
         self.fragMatrix = DataFrame([])
         
-        if file_type == 0:
-            textpath = self.suspdir; column = 'susp'
-        else: textpath = self.srcdir; column = 'src'
+        if textName.startswith('susp'): column = 'susp'
+        else: column = 'src'
         
         #Load aligned text structure corresponding to doc = idTrueCase
-        text = pd.read_csv(os.path.join('../align',column,self.TextPairs[column][idx]),
+        alignedText = pd.read_csv(os.path.join('../align',column,self.TextPairs[column][idx]),
                          names=['id','sent','offset','length'], 
                          sep='\t')
 
-        #Generate de fragment matrix
-        for idy in text.index: #for every sentence
-
+        #Generate de chunk matrix
+        for idy in alignedText.index: #for every sentence
             fragVector = []
             fragment = ''
-            for x in range(len(text)):
+            for x in range(len(alignedText)):
                 if x >= idy:
-                    fragment += str(text['sent'][x]) + ' '
+                    fragment += str(alignedText['sent'][x]) + ' '
                     fragVector.append(fragment)
                 else: fragVector.append('NaN')
-                #print('idy:',idy, ',x:',x,',frag:',text['sent'][x])
             self.fragMatrix[idy]=fragVector
         
         return self.fragMatrix
 
     def getFeatureVector(self, frag):
-        print('getFeatureVector')
+        """Calc shallow similarity between a text fragment and every chunk generated in :func: getFragFrom.
+        This implementation could be changed and is based on:
+        * length, whitespaces count, and sentence count
+        Return: a vector with the feature score for every chunk generated in :func: getFragFrom.
+        """
         self.featureFragMatrix = DataFrame([])
-        print('FRAGMENTO',frag)
         F1f = len(frag)
-        F2f = frag.count(' ')
-        F3f = frag.count('.')
-        #Ff = mean([F1f,F2f,F3f])
-        #F1f = F1f/Ff;F2f = F2f/Ff;F3f = F3f/Ff
-        print('self.fragMatrix.index',len(self.fragMatrix.index))
         for x in self.fragMatrix.index:
             FValue_Vector = []
             for y in self.fragMatrix.xs(x).index:
                 F1 = len(self.fragMatrix[y][x])
-                F2 = self.fragMatrix[y][x].count(' ')
-                F3 = self.fragMatrix[y][x].count('.')
-                F = mean([F1,F2,F3])
-                #F1 = F1/F;F2 = F2/F;F3 = F3/F
-                FValue = (pow(F1/F1f* F2/F2f * F3/F3f, 1/3)*3)/sum([F1/(F1f) , F2/(F2f) , F3/F3f])
-                #print('FV',FValue)
-                print(x,y,':',F1,F2,F3,'|', F1f,F2f,F3f,'|', F1/F1f, F2/F2f, F3/F3f,'|', FValue)
+                #print(F1,F1f)
+                F1v = pow(F1*F1f,1/2)/float(sum([F1,F1f]))
+                #print(F1v)
+                F2v = calcCommonWords(frag,self.fragMatrix[y][x])
+                #print(F2v)
+                FValue = pow(F1v*F1v*F2v,1)/float(sum([F1v,F1v,F2v]))
+                #print(FValue)
+                #input()
                 FValue_Vector.append(FValue)
             self.featureFragMatrix[x] = FValue_Vector
         return self.featureFragMatrix
 
     def bestValue(self):
-        maxv = 0
-        #print('++++++++++',len(self.featureFragMatrix.columns))
+        """Return best chunk of susp/src DOC """
+        maxv = 0; xmax = 0; ymax = 0
         for idx in self.featureFragMatrix.columns:
             for idy in self.featureFragMatrix[idx].keys():
-                #print('----',self.featureFragMatrix[idx][idy])
+
                 if self.featureFragMatrix[idx][idy] > maxv:
                     maxv = self.featureFragMatrix[idx][idy]
                     xmax = idx;ymax = idy
-                    print('maxs:', xmax,ymax)
         return xmax,ymax
 
 def appendCorpusCase(newCaseID, bestEval):
@@ -187,39 +188,45 @@ def appendCorpusCase(newCaseID, bestEval):
     paraphCorpus.write(newCase)
     paraphCorpus.close()
 
-#Utils
+#Function utils
 def matrixCommonWords(TextPairs, TrueCases):
     """ Get the common Word Matrix columns = TrueCases, index = textCase.
     """
     
-    for idy in self.TextPairs.index:
-        susp = os.path.join(suspdir, self.TextPairs.susp[idy])
-        src = os.path.join(srcdir, self.TextPairs.src[idy])
+    for idy in TextPairs.index:
+        susp = os.path.join(suspdir, TextPairs.susp[idy])
+        src = os.path.join(srcdir, TextPairs.src[idy])
 
         wordSusp = set(open(susp).read().split())
         wordSrc = set(open(src).read().split())
 
         CW_Vector = []
         
-        for idx in self.TrueCases.index:
-            CW_Vector.append(self.calcCommonWords(TrueCases.xs(idx),wordSusp,wordSrc))
+        for idx in TrueCases.index:
+            CW_Vector.append(calcCommonWords(TrueCases.xs(idx),wordSusp,wordSrc))
         
         CWM[idy] = CW_Vector
-        #print('column',idy,'=',self.CWM[idy])
 
     #save CWM into a file for future uses
-    col = [x for x in range(0,len(self.TextPairs))]
+    col = [x for x in range(0,len(TextPairs))]
     CWM.to_csv(path_or_buf='CWM.csv',cols=col)
 
-    return CMW
+    return CWM
 
-def calcCommonWords(trueCase, wordSusp, wordSrc):
+def calcCommonWords(wordSusp, wordSrc,trueCase = False):
     "Get similarity between vocabularies."
-    U = set(trueCase['suspf'].split())
-    T = set(trueCase['srcf'].split())
-    Q = wordSusp
-    R = wordSrc
-    return len(Q.intersection(U))/float(len(U))+len(R.intersection(T))/float(len(T))
+    if trueCase:
+        U = set(trueCase['suspf'].split())
+        T = set(trueCase['srcf'].split())
+        Q = wordSusp
+        R = wordSrc
+        return len(Q.intersection(U))/float(len(U))+len(R.intersection(T))/float(len(T))
+    else:
+        U = set(wordSusp.split())
+        T = set(wordSrc.split())
+        Q = wordSusp
+        R = wordSrc
+        return len(T.intersection(U))/float(len(U.union(T)))
 
 
 
@@ -253,10 +260,10 @@ if __name__ == "__main__":
         # Read Common Word Matrix if exists.
         try:
             CWM = pd.read_csv('CWM.csv',header=0,index_col=0)
-            print(len(CWM))
-            input()
         except:
             pass
+
+        #Start the process
         pipeline.loadCWMatrix(CWM)
         pipeline.bestNTextsPerTrueCase()
         pipeline.getFalseCases()
