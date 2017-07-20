@@ -9,8 +9,8 @@
 *.sh
 */src
 */susp
-/swalign
-/orig
+*/swalign
+*/orig
 *.txt
 *PAN*
 *checkpoint.ipynb
