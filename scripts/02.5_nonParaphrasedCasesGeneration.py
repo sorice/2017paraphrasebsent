@@ -3,8 +3,8 @@
 
 """Negative cases generation of paraphrased cases
 Created on Wed Dec 01 2016
-Modified by analysis on 
-Finish on 
+Modified by analysis on
+Finish on
 .. version: 0.1
 .. release: 0.1-RC1 7/12/2016
 .. author: Abel Meneses abad
@@ -22,10 +22,10 @@ from numpy import mean
 
 class CorpusChange:
     def __init__(self, nonParaphTextPairList, TrueCasesCorpusFile, suspdir, srcdir, N):
-        self.pairFile = nonParaphTextPairList         #list of text pairs path file 
+        self.pairFile = nonParaphTextPairList         #list of text pairs path file
         self.trueCase = TrueCasesCorpusFile     #positive cases path file
         self.suspdir = suspdir
-        self.srcdir = srcdir                    
+        self.srcdir = srcdir
         self.path=['susp/','src/']
         self.CWM = DataFrame([])                #Common Word Matrix
         self.N = N
@@ -48,13 +48,13 @@ class CorpusChange:
         else:
             self.CWM = CWM
             print('Matrix of Common Words loaded.\n')
-        return 
+        return
 
     def bestNTextsPerTrueCase(self):
         """
         Get by True Case the best N IDs of non paraphrased text pair.
         """
-        
+
         for trueCase in self.CWM.index:
             for x,(NonParaphTextPairID,value) in enumerate(self.CWM.xs(trueCase).sort_values(ascending=False).iteritems()):
                 if x < self.N:
@@ -75,7 +75,7 @@ class CorpusChange:
                 #print('TRUECaseID',TRUECaseID,'NonParaphTextPairID',NonParaphTextPairID)
                 #get best frag of a NonParaphTextPairID per True Case
                 ID,self.FragmentTexts = self.bestFrag(TRUECaseID, NonParaphTextPairID)
-                
+
                 #Append new False case to corpus
                 appendCorpusCase(ID,self.FragmentTexts)
         return
@@ -90,7 +90,7 @@ class CorpusChange:
         self.suspf = self.TrueCases.suspf[TRUECaseID]
         self.srcf = self.TrueCases.srcf[TRUECaseID]
         #Load susp & src file names
-        idx = int(NonParaphTextPairID)      
+        idx = int(NonParaphTextPairID)
         susp = self.TextPairs.susp[idx]
         src = self.TextPairs.src[idx]
 
@@ -121,13 +121,13 @@ class CorpusChange:
         The algorithm is designed to work with aligned texts. See the results of 02.2c-Jaccard-Align-Preproc-to-Original-Sent.ipynb
         """
         self.fragMatrix = DataFrame([])
-        
+
         if textName.startswith('susp'): column = 'susp'
         else: column = 'src'
-        
+
         #Load aligned text structure corresponding to doc = idTrueCase
-        alignedText = pd.read_csv(os.path.join('../align',column,self.TextPairs[column][idx]),
-                         names=['id','sent','offset','length'], 
+        alignedText = pd.read_csv(os.path.join('data/PAN-PC-2013/aligned',column,self.TextPairs[column][idx]),
+                         names=['id','sent','offset','length'],
                          sep='\t')
 
         #Generate de chunk matrix
@@ -140,7 +140,7 @@ class CorpusChange:
                     fragVector.append(fragment)
                 else: fragVector.append('NaN')
             self.fragMatrix[idy]=fragVector
-        
+
         return self.fragMatrix
 
     def getFeatureVector(self, frag):
@@ -182,7 +182,7 @@ def appendCorpusCase(newCaseID, bestEval):
     """Write the positive cases corpus
     """
     #TODO: send CorpusName as a parameter
-    
+
     paraphCorpus = open(outdir+'/PAN-None-Paraphrase-Corpus','a')
     newCase = newCaseID+'\t'+bestEval['susp']+'\t'+bestEval['src']+'\t'+str(0)+'\n'
     paraphCorpus.write(newCase)
@@ -192,7 +192,7 @@ def appendCorpusCase(newCaseID, bestEval):
 def matrixCommonWords(TextPairs, TrueCases):
     """ Get the common Word Matrix columns = TrueCases, index = textCase.
     """
-    
+
     for idy in TextPairs.index:
         susp = os.path.join(suspdir, TextPairs.susp[idy])
         src = os.path.join(srcdir, TextPairs.src[idy])
@@ -201,10 +201,10 @@ def matrixCommonWords(TextPairs, TrueCases):
         wordSrc = set(open(src).read().split())
 
         CW_Vector = []
-        
+
         for idx in TrueCases.index:
             CW_Vector.append(calcCommonWords(TrueCases.xs(idx),wordSusp,wordSrc))
-        
+
         CWM[idy] = CW_Vector
 
     #save CWM into a file for future uses
@@ -232,11 +232,11 @@ def calcCommonWords(wordSusp, wordSrc,trueCase = False):
 
 
 if __name__ == "__main__":
-    """ Process the commandline arguments. We expect five arguments: 
-    - The path pointing to the negative pairs file, 
-    - The paths pointing to the positive cases corpus, obtained before this script.
-    - the actual source and suspicious documents are located,
-    - and the path pointing to output directory.
+    """ Process the commandline arguments. We expect five arguments:
+    1- The path pointing to the negative pairs file,
+    2- The paths pointing to the positive cases corpus, obtained before this script.
+    3&4- the actual source and suspicious documents are located,
+    5- and the path pointing to output directory.
 
     $ python3 script.py nonPairTextFile positiveCorpusFile susp src outdir
     """
@@ -250,10 +250,10 @@ if __name__ == "__main__":
         outdir = sys.argv[5]
         N = 2
         CWM = DataFrame([])
-        
+
         if outdir[-1] != "/":
             outdir+="/"
-        
+
         #Initializing a corpus transformation object
         pipeline = CorpusChange(nonPairTextFile,trueCasesCorpusFile, suspdir, srcdir, N)
 
