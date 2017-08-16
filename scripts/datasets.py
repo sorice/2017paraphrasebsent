@@ -39,7 +39,7 @@ from pandas import DataFrame, Series, read_table
 import textsim
 from textsim.utils import calc_all
 import arff
-import time
+import os
 
 def msrpc_to_csv(file_path='data/MSRPC-2004/msrpc_textsim.txt',out_path=''):
     """Convert corpus MSRP from TXT format to CSV format in sklearn Bunch
@@ -61,7 +61,7 @@ def msrpc_to_csv(file_path='data/MSRPC-2004/msrpc_textsim.txt',out_path=''):
     distances.append('id')
     distances.append('class')
 
-    for row in range(10):
+    for row in range(len(df)):
         clase, ide1, ide2, sent1, sent2 = df.xs(row)
         try:
             obj = calc_all(sent1,sent2)[2:]
@@ -112,7 +112,7 @@ def msrpc_to_arff(file_path='data/MSRPC-2004/msrpc_textsim.txt',out_path=''):
         distances.append('class')
         corpus.write('@data\n')
 
-        for row in range(10):
+        for row in range(len(df)):
             clase, ide1, ide2, sent1, sent2 = df.xs(row)
             try:
                 obj = calc_all(sent1,sent2)[2:]
