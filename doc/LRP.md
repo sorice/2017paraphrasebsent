@@ -1,7 +1,11 @@
 # TODO Features
-- preprocess module
-- pytextsim module
-- comparison module
+- integrate preprocess module
+    * con shallow submod (normalization + POS)
+    * con deep submod (Synt Dep, SRL, NE)
+- integrate textsim module with url in github, users of this notebook collection must to download.
+- create analysis script
+- work with zip files of corpus
+- arff_to_csv utilizando scipy[OK]
 
 
 # Implemented Features
