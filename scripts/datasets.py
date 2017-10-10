@@ -25,6 +25,7 @@ def load_msrpc(file_path='data/MSRPC-2004/msrpc_textsim.csv'):
                 ir[-1] = 0
             target[i] = np.asarray(ir[-1], dtype=np.int)
 
+	#TODO: write the msrpc description file like iris.rst in ~/sklearn/datasets/descr
         fdescr = ''
 
     return Bunch(data=data, target=target,
