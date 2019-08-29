@@ -1,25 +1,28 @@
 #!/usr/bin/env python3.5
 # -*- coding: utf-8 -*-
 
-"""Script function to preprocess a text-reuse collection texts given pare the data.
-If the user enter a path to preprocess a list of document, or a doc the module will no fail.
-Created on Fry Sept 02 2016
-Modified by analysis on 
-Finish on 
-.. version: 0.1
-.. release: 0.1-RC1
+"""Preprocess script for text-reuse collection texts given in pairs.
+
+Based on first experiences this script check both texts part of a pair
+case, and normalize it only if these has been processed before.
+The memory of the script is the normalizedDocDict document.
+(normalizedDocDict text will be saved after every use on "norm" folder)
+
+You must create susp and src folders inside norm folder before start.
+
+Created on Sept 2016
 .. author: Abel Meneses abad
 """
 
 import sys
-sys.path.append('/home/abelm')
+sys.path.append('/home/abelma')
 import re
 import time
 import os
-from preprocess.example import preProcessFlow as textNormalizationProcess
+from preprocess.demo import preProcessFlow as textNormalizationProcess
 
 class Process:
-    def __init__(self, susp, src, outdir, normalizedDocList):
+    def __init__(self, susp, src, outdir, normalizedDocDict):
         self.susp = susp
         self.src = src
         self.susp_file = os.path.split(susp)[1]
@@ -27,7 +30,7 @@ class Process:
         self.outdir=outdir
         self.validText = True
         self.validProcess = []
-        self.normalizedDocList = normalizedDocList
+        self.normalizedDocDict = normalizedDocDict
         self.filepath = ['susp/','src/']
 
     def process(self):
@@ -35,11 +38,11 @@ class Process:
         validProcess = []
         for i,fileName in enumerate([self.susp, self.src]):
         	#Normalize if you didn't before
-            if fileName not in self.normalizedDocList.keys():
+            if fileName not in self.normalizedDocDict.keys():
                 validProcess = self.preprocess(fileName,i)
             #Don't normalize again, take the value obtained before
             else:
-                validProcess = self.normalizedDocList[fileName]
+                validProcess = self.normalizedDocDict[fileName]
 
             self.validProcess.append(validProcess)
 
@@ -54,11 +57,12 @@ class Process:
         #Normalizing Text
         textNorm = textNormalizationProcess(text)
         
-        # Add fileName to preprocessed doc list
-        self.normalizedDocList[fileName] = True
+        # Add fileName to preprocessed doc dict
+        self.normalizedDocDict[fileName] = True
 
-        #write the preprocessed text result in a new path with the same name
-        doc = open(self.outdir+self.filepath[i]+os.path.split(fileName)[1],'w') 
+        #write the preprocessed text in a new path with the same name
+        doc = open(self.outdir+self.filepath[i]+os.path.split(fileName)[1],'w')
+        #print('ruta a guardar:\n',self.outdir+self.filepath[i]+os.path.split(fileName)[1]) 
         doc.write(textNorm)
         doc.close()
 
@@ -73,64 +77,71 @@ if __name__ == "__main__":
     initt = time.time()
     positive = 0
 
+    print('The script will use as default the data folder as working directory')
+    datadir = os.path.abspath(os.getcwd()+'/data/')
+    print(datadir)
+
     if len(sys.argv) == 5:
-        srcdir = sys.argv[2]
-        suspdir = sys.argv[3]
-        outdir = sys.argv[4]
-        if outdir[-1] != "/":
-            outdir+="/"
-        lines = open(sys.argv[1], 'r').readlines()
-        cases = len(lines)
-        normalizedDocList = {}
+        srcdir = os.path.join(datadir,sys.argv[2])    #src dir
+        suspdir = os.path.join(datadir,sys.argv[3])   #susp dir
+        outdir = os.path.join(datadir,sys.argv[4])    #result dir
+        
+        normalizedDocDict = {}
         validCases = []
 
-        txt = open(outdir+'normalizedDocList')
-        doc = txt.read()
-        for line in doc.split('\n'):
-            if line[line.find(' ')+1:] == 'True':
-                normalizedDocList[line[:line.find(' ')]] = True
-            else:
-            	if len(line) > 1:
-                	normalizedDocList[line[:line.find(' ')]] = False
+        #If not exist, create normalizedDocDict txt at first running
+        #Else let the data intact
+        txt = open(outdir+'normalizedDocDict','a')
         txt.close()
 
-        for i,line in enumerate(lines):
-            try:
-                susp, src = line.split()
+        #Doing a normalized Document Dict to control wich of repeated
+        #text has been preprocessed
+        #Useful the second time or 
+        for line in open(outdir+'normalizedDocDict'):
+            if line.split()[1]=='True':
+                normalizedDocDict[line.split()[0]] = True
+            else:
+                normalizedDocDict[line.split()[0]] = False
 
-                flow = Process(os.path.join(suspdir, susp),
-                                    os.path.join(srcdir, src), outdir,
-                                    normalizedDocList)
-                validProcess = flow.process()
-                result = validProcess[0]&validProcess[1]
+        count = 0
+        for line in open(os.path.join(datadir,sys.argv[1])): #open pairs
 
-                #if result is good then the text pairs contain in line is valid
-                #then write a valid case
-                if result:
-                    positive+=1
-                    validCases.append(line[:-1])              
-                
-                #Update normalizedDocList. Cases can share some of its texts.
-                #The next two lines optimize normalization process if texts repeats.
-                normalizedDocList[os.path.join(suspdir, susp)] = validProcess[0]
-                normalizedDocList[os.path.join(srcdir, src)] = validProcess[1]
-                
-                #The next two lines are to print on the notebook    
-                if i*10%cases <= 10 or i == len(lines)-1:
-                    print(i+1,'/',cases,'TRUE:', positive)
-           
-            except: #blank lines for example
-                pass
+            susp, src = line.split()
 
-        #write valid cases in a text
+            flow = Process(os.path.join(suspdir, susp),
+                                os.path.join(srcdir, src), outdir,
+                                normalizedDocDict)
+
+            validProcess = flow.process()
+            result = validProcess[0]&validProcess[1]
+
+            #if result is good then the text pairs contain in line is valid
+            #then write a valid case
+            if result:
+                positive+=1
+                validCases.append(line[:-1])              
+            
+            # Update normalizedDocDict. 
+            # Different cases can share a text member with other case.
+            # Optimization for norm process if a text is repeated.
+            normalizedDocDict[os.path.join(suspdir, susp)] = validProcess[0]
+            normalizedDocDict[os.path.join(srcdir, src)] = validProcess[1]
+            count += 1
+
+            #Auxiliar code to follow process on terminal output
+            #Useful when the number of pair cases are big
+            if count%1000 == 0:
+                print('Preprocessed cases: ',count,'Valid cases: ', positive)
+
+        #Writing normalized pare cases in a text for future flows
         pairValidDoc = open(outdir+'norm_pairs','w')
         for case in validCases:
             pairValidDoc.write(case+'\n')
         pairValidDoc.close()
 
         #write pre processed doc list in a text to avoid future re-preprocessing
-        doc = open(outdir+'normalizedDocList','w')
-        for key,value in sorted(normalizedDocList.items()):
+        doc = open(outdir+'normalizedDocDict','w')
+        for key,value in sorted(normalizedDocDict.items()):
             doc.write(key+' '+str(value)+'\n')
         doc.close()
 
