@@ -15,58 +15,11 @@ Created on Sept 2016
 """
 
 import sys
-sys.path.append('/home/abelma')
 import re
 import time
 import os
 from preprocess.demo import preProcessFlow as textNormalizationProcess
-
-class Process:
-    def __init__(self, susp, src, outdir, normalizedDocDict):
-        self.susp = susp
-        self.src = src
-        self.susp_file = os.path.split(susp)[1]
-        self.src_file = os.path.split(src)[1]
-        self.outdir=outdir
-        self.validText = True
-        self.validProcess = []
-        self.normalizedDocDict = normalizedDocDict
-        self.filepath = ['susp/','src/']
-
-    def process(self):
-
-        validProcess = []
-        for i,fileName in enumerate([self.susp, self.src]):
-        	#Normalize if you didn't before
-            if fileName not in self.normalizedDocDict.keys():
-                validProcess = self.preprocess(fileName,i)
-            #Don't normalize again, take the value obtained before
-            else:
-                validProcess = self.normalizedDocDict[fileName]
-
-            self.validProcess.append(validProcess)
-
-        return self.validProcess
-
-    def preprocess(self, fileName, i):
-        """ Text normalization pipeline. """
-
-        with open(fileName) as _file:
-            text = _file.read()
-        
-        #Normalizing Text
-        textNorm = textNormalizationProcess(text)
-        
-        # Add fileName to preprocessed doc dict
-        self.normalizedDocDict[fileName] = True
-
-        #write the preprocessed text in a new path with the same name
-        doc = open(self.outdir+self.filepath[i]+os.path.split(fileName)[1],'w')
-        #print('ruta a guardar:\n',self.outdir+self.filepath[i]+os.path.split(fileName)[1]) 
-        doc.write(textNorm)
-        doc.close()
-
-        return True
+from pipeline import Process
 
 if __name__ == "__main__":
     """ Process the commandline arguments. We expect four arguments: The path
@@ -110,7 +63,7 @@ if __name__ == "__main__":
 
             flow = Process(os.path.join(suspdir, susp),
                                 os.path.join(srcdir, src), outdir,
-                                normalizedDocDict)
+                                normalizedDocDict,textNormalizationProcess)
 
             validProcess = flow.process()
             result = validProcess[0]&validProcess[1]
