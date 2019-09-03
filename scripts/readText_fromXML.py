@@ -19,16 +19,15 @@ from IPython.display import (
 from xml.dom.minidom import parse
 import xml.dom.minidom
 
-class PANXml:
+class PANXml_Reader:
     """Class to work with plagiarism PAN XML document using minidom parser."""
 
     def __init__ (self, xmlFileName):
         self.xmlFileName = xmlFileName
         self.fragmentList = []
-        self.parse()
 
     def parse(self):
-        """Parse a plagiarism PAN XML document."""
+        """Parse one XML document of PAN Plagiarism XML corpus."""
     
         DOMTree = xml.dom.minidom.parse(self.xmlFileName)
         rootElement = DOMTree.documentElement
@@ -48,7 +47,7 @@ class PANXml:
             
             self.fragmentList.append(caso)
             
-        return 
+        return self.fragmentList
 
 class pairCase(object):
     def __init__(self, suspDocName, srcDocName, susp_offset, susp_len, src_offset, src_len, paraph):
@@ -97,11 +96,12 @@ class Tabla(object):
         return self.struct
 
 def Flow():
-    PATH = '../orig/03-random-obfuscation/'
-    PATH2 = '../'
-    case = parsePANXml(os.path.abspath(PATH+'suspicious-document00007-source-document00382.xml'))
-    text1 = getText(PATH2+'susp/'+case[0].suspDocName, case[0].suspOffset,case[0].suspLength)
-    text2 = getText(PATH2+'src/'+case[0].srcDocName, case[0].srcOffset,case[0].srcLength)
+    xmlPATH = 'data/orig/xml/'
+    textPATH = 'data/orig/'
+    pair = PANXml_Reader(os.path.abspath(xmlPATH+'suspicious-document00007-source-document00382.xml'))
+    case  = pair.parse()
+    text1 = getText(textPATH+'susp/'+case[0].suspDocName, case[0].suspOffset,case[0].suspLength)
+    text2 = getText(textPATH+'src/'+case[0].srcDocName, case[0].srcOffset,case[0].srcLength)
     struct = constructHTML(text1, text2)
     tabla = Tabla(struct)
     display_html(tabla)
