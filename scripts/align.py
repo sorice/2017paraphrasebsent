@@ -49,10 +49,8 @@ def __jaccard(text1,text2):
     sentB1 = re.sub(r'[!"#$%&()\'*+,-/:;<=>?@\\^_`{|}~.\[\]]',' ', text2)
     setA = set(sentA1.split())
     setB = set(sentB1.split())
-    if len(setA.union(setB)) == 0:
-        return 0, sentA1, sentB1
-    else:
-        return len(setA.intersection(setB))/float(len(setA.union(setB))), sentA1, sentB1
+    total_terms = len(sentB1.split())
+    return len(setA.intersection(setB))/(total_terms or 1)
 
 def sentenceAligner(preproc_text, original_text):
     """Align preprocessed sentences vs original sentences returning the original boundaries.
@@ -72,13 +70,15 @@ def sentenceAligner(preproc_text, original_text):
     norm_orig_text = normalize(original_text)
 
     #if norm_orig_text.count('.') < preproc_text.count('.'):
-     #   raise Exception("Preprocess Error: number of preproc periods most be less or equal than normalize original text periods.")
+    #   raise Exception("Preprocess Error: number of preproc periods most be less or equal than normalize original text periods.")
 
     for i, (sentA, offsetA, lengthA) in enumerate(getSentA(preproc_text)):
         maxScore =-1; score = 0
         prevPoint = 0#len(sentA)-2
         nextPoint = 0
-        iqualScore = 0;prevFrag='';jaccard_measure = 0; X = {()}; Y={()}
+        iqualScore = 0
+        prevFrag=''
+        jaccard_measure = 0
         k = 0.5
 
         #Optimization for long sentences
@@ -100,16 +100,16 @@ def sentenceAligner(preproc_text, original_text):
             
             #Get sentence B and prepare it to calc distances
             sentB, nextPoint, prevPoint = getSentB(norm_orig_text, offsetB, nextPoint, prevPoint)
-            sentB = sentB.replace('\n',' ') #avoid some bugs on swalign function
             
             #Calc distances Jaccard
-            jaccard_measure, X, Y = __jaccard( sentA , sentB) #Second measure only to lookfor errors
+            jaccard_measure = __jaccard( sentA , sentB)
             score = jaccard_measure
  
             #The same consecutives sentence exception
             if prevFrag == sentB[-round(len(sentA)*k):]:
                 break
-            prevFrag = sentB[-round(len(sentA)*k):] #keep the previous fragment to know if the next sent is the same as before. SmithWaterman move forward to the next sentence.
+            #keep previous fragment to control if next sent is equal.
+            prevFrag = sentB[-round(len(sentA)*k):]
 
             #Short sentence exceptions
             if len(sentA) < 14:
