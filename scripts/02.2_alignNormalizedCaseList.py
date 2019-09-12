@@ -1,4 +1,4 @@
-#!/usr/bin/env pythonS3.5
+#!/usr/bin/env pythonS3.6
 # -*- coding: utf-8 -*-
 
 """Utilitie functions to standarize the IN-object to the preprocessing method.
@@ -47,6 +47,7 @@ if __name__ == "__main__":
         count = 0
         for line in open(os.path.join(datadir,sys.argv[1])):
             susp, src = line.split()
+            print('++++++++++++++',susp,src)
 
             flow = Process(os.path.join(suspdir, susp),
                                 os.path.join(srcdir, src), outdir,
@@ -55,8 +56,7 @@ if __name__ == "__main__":
             validProcess = flow.process()
             result = validProcess[0]&validProcess[1]
 
-            #if result is good then the text pairs contain in line is valid
-            #then write a valid case
+            #if result is true then pair case is valid
             if result: 
                 positive+=1
                 validCases.append(line[:-1])
@@ -72,7 +72,7 @@ if __name__ == "__main__":
                 print('Preprocessed cases: ',count,'Valid cases: ', positive)
 
         #write valid cases in a text
-        pairValidDoc = open(outdir+'align_pairs','w')
+        pairValidDoc = open(outdir+'aligned_pairs','w')
         for case in validCases:
             pairValidDoc.write(case+'\n')
         pairValidDoc.close()
@@ -85,6 +85,6 @@ if __name__ == "__main__":
 
     else:
         print('\n'.join(["Unexpected number of commandline arguments.",
-                         "Usage: ./02.3_alignNormalizedCaseList.py {pairs} {src-dir} {susp-dir} {out-dir}"]))
+                         "Usage: ./02.2_alignNormalizedCaseList.py {pairs} {src-dir} {susp-dir} {out-dir}"]))
     timef = time.time() - initt
     print ('tiempo total: ',timef)

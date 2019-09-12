@@ -6,6 +6,7 @@
 
 import os
 from preprocess.demo import preProcessFlow as textNormalizationProcess
+from align import sentenceAligner
 
 class Process:
     def __init__(self, susp, src, outdir, docDict, stepFunc):
@@ -26,6 +27,8 @@ class Process:
         self.filepath = ['susp/','src/']
 
     def process(self):
+        """Preprocess the both text has been preprocessed before.
+        """
 
         validProcess = []
         for i,fileName in enumerate([self.susp, self.src]):
@@ -41,13 +44,16 @@ class Process:
         return self.validProcess
 
     def preprocess(self, fileName, i):
-        """ Text pipeline. """
-
-        #Load original text
-        with open(fileName) as _file:
-            original_text = _file.read()
+        """ Text pipeline options:
+        1- Original text -> Normalize text
+        2- Normalized text -> Align with Original text 
+        """
         
         if self.stepFunc == textNormalizationProcess:
+            #Load original text
+            with open(fileName) as _file:
+                original_text = _file.read()
+
             #Normalizing Text
             text_result = self.stepFunc(original_text)
 
@@ -56,7 +62,12 @@ class Process:
             doc.write(text_result)
             doc.close()
         
-        else:
+        elif self.stepFunc == sentenceAligner:
+            #Load Original text
+            fileName = fileName.replace('norm','orig')
+            with open(fileName) as _file:
+                original_text = _file.read()
+
             #Load normalized text
             with open('data/norm/'+self.filepath[i]+os.path.split(fileName)[1]) as _file:
                 normalized_text = _file.read()
@@ -70,8 +81,8 @@ class Process:
                 alignedDoc.write(str(sent[0])+'\t'+sent[1]+'\t'+str(sent[2])+'\t'+str(sent[3])+'\n')
             alignedDoc.close()
 
-        # else:
-        #     print("The function ", self.stepFunc, " it is not available.""")
-        #     return False
+        else:
+            print("The function ", self.stepFunc, " it is not available.""")
+            return False
 
         return True

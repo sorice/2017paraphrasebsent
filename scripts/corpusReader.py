@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.6
 # -*- coding: utf-8 -*-
 
 """Script for 
@@ -26,7 +26,7 @@ class PANXml_Reader:
         self.xmlFileName = xmlFileName
         self.fragmentList = []
 
-    def parse(self):
+    def parser(self):
         """Parse one XML document of PAN Plagiarism XML corpus."""
     
         DOMTree = xml.dom.minidom.parse(self.xmlFileName)
@@ -99,7 +99,7 @@ def Flow():
     xmlPATH = 'data/orig/xml/'
     textPATH = 'data/orig/'
     pair = PANXml_Reader(os.path.abspath(xmlPATH+'suspicious-document00007-source-document00382.xml'))
-    case  = pair.parse()
+    case  = pair.parser()
     text1 = getText(textPATH+'susp/'+case[0].suspDocName, case[0].suspOffset,case[0].suspLength)
     text2 = getText(textPATH+'src/'+case[0].srcDocName, case[0].srcOffset,case[0].srcLength)
     struct = constructHTML(text1, text2)
