@@ -14,3 +14,6 @@
 *.txt
 *PAN-PC*
 *checkpoint.ipynb
+/data/false_pairs
+/data/true_pairs
+/data/full_corpus
