@@ -8,6 +8,10 @@ jupyter
 #Visualization
 seaborn
 matplotlib
+tqdm
+
+#Data format
+arff
 
 #Machine Learning
 numpy
@@ -17,3 +21,4 @@ sklearn
 #Text similarity
 swalign
 preprocess
+textsim
