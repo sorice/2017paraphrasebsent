@@ -18,7 +18,7 @@ import sys
 import os
 from numpy import mean
 
-"TODO: make test > python3 02.5_nonParaphrasedCasesGeneration.py test/Non-pairs.test test/True-corpus.test test/susp/ test/src/ test/out/"
+"TODO: make test > python3 02.4_nonParaphrasedCasesGeneration.py test/Non-pairs.test test/True-corpus.test test/susp/ test/src/ test/out/"
 
 class CorpusChange:
     def __init__(self, nonParaphTextPairList, TrueCasesCorpusFile, suspdir, srcdir, N):

@@ -1,7 +1,5 @@
 ****************EXPERIMENTOS
 
-Nota: parado en la carpeta 00_plag_algh
-
 python3 utils.py orig/pairs src/ susp/ norm/
 
 cd doc/

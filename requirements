@@ -1,0 +1,19 @@
+#better config and install
+wheel
+Pillow
+
+#Notebooks
+jupyter
+
+#Visualization
+seaborn
+matplotlib
+
+#Machine Learning
+numpy
+pandas
+sklearn
+
+#Text similarity
+swalign
+preprocess
