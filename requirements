@@ -12,10 +12,11 @@ tqdm
 
 #Data format
 arff
+csv
+pandas
 
 #Machine Learning
 numpy
-pandas
 sklearn
 
 #Text similarity
