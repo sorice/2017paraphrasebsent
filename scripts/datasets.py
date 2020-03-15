@@ -16,7 +16,7 @@ import arff
 import os
 
 
-def load_msrpc(file_path='../data/MSRPC-2004/msrpc.csv'):
+def load_msrpc(file_path):
     """Load the Microsoft Research Paraphrase Corpus"""
 
     with open(file_path) as csv_file:
@@ -25,21 +25,25 @@ def load_msrpc(file_path='../data/MSRPC-2004/msrpc.csv'):
         n_samples = int(temp[0])
         n_features = int(temp[1])
         target_names = np.array(temp[2:4])
-        feature_names = np.array(temp[4:-1])
+        temp = next(data_file)
+        feature_names = np.array(temp[:-2])
         data = np.empty((n_samples, n_features))
-        target = np.empty((n_samples,), dtype=np.int)
+        target = np.empty((n_samples), dtype=np.int)
+        index = np.empty((n_samples), dtype=np.int)
 
+        temp = next(data_file)
         for i, ir in enumerate(data_file):
-            data[i] = np.asarray(ir[:-1], dtype=np.float)
+            data[i] = np.asarray(ir[:-2], dtype=np.float)
             target[i] = np.asarray(ir[-1], dtype=np.int)
+            index[i] = np.asarray(ir[-2], dtype=np.int)
 
-	#TODO: write the msrpc description file like iris.rst in ~/sklearn/datasets/descr
-        fdescr = ''
+        fdescr = 'Microsoft Research Corpus'
+        #TODO: write the msrpc description file like iris.rst in ~/sklearn/datasets/descr
 
     return Bunch(data=data, target=target,
                 target_names=target_names,
                 DESCR=fdescr,
-                feature_names=feature_names)
+                feature_names=feature_names), index
 
 def msrpc_to_csv(file_path ,out_path=''):
     """Convert corpus MSRP from TXT format to CSV format in sklearn Bunch
@@ -96,7 +100,6 @@ def msrpc_to_csv(file_path ,out_path=''):
         out_path = os.path.abspath(file_path)[:os.path.abspath(file_path).rfind('.')]+'.csv'
 
     data.to_csv(out_path)
-
     #TODO completar las dos primeras líneas para el estandar Bunch de sklearn
 
     return True
