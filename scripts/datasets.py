@@ -16,7 +16,7 @@ import arff
 import os
 
 
-def load_msrpc(file_path='data/MSRPC-2004/msrpc_textsim.csv'):
+def load_msrpc(file_path='../data/MSRPC-2004/msrpc.csv'):
     """Load the Microsoft Research Paraphrase Corpus"""
 
     with open(file_path) as csv_file:
@@ -31,10 +31,6 @@ def load_msrpc(file_path='data/MSRPC-2004/msrpc_textsim.csv'):
 
         for i, ir in enumerate(data_file):
             data[i] = np.asarray(ir[:-1], dtype=np.float)
-            if 'yes' in ir[-1]:
-                ir[-1] = 1
-            elif 'no' in ir[-1]:
-                ir[-1] = 0
             target[i] = np.asarray(ir[-1], dtype=np.int)
 
 	#TODO: write the msrpc description file like iris.rst in ~/sklearn/datasets/descr
@@ -48,10 +44,6 @@ def load_msrpc(file_path='data/MSRPC-2004/msrpc_textsim.csv'):
 def msrpc_to_csv(file_path ,out_path=''):
     """Convert corpus MSRP from TXT format to CSV format in sklearn Bunch
     structure.
-
-    Example:
-    >>> from scripts.datasets import msrpc_to_csv
-    >>> msrpc_to_simvector('../data/MSRPC-2004/msrpc_paraphrase_test.txt','../data/MSRPC-2004/msrpc_paraphrase_test.csv')
     """
 
     if not file_path:
@@ -67,36 +59,45 @@ def msrpc_to_csv(file_path ,out_path=''):
     distances = []
     exceptions = []
 
-    distances.append('id')
+    #Structuring the columns
     for distance in sorted(textsim.__all_distances__.keys()):
         distances.append(distance)
+    distances.append('id')
     distances.append('class')
     
     data = DataFrame(columns=distances)
 
     with open(file_path) as corp:
-        for num,row in enumerate(corp):
+        count = 0
+        for row in corp:
             try:
                 clase, ide1, ide2, sent1, sent2 = row.split('\t')
-                if num == 0:
+                if count == 0: #do not process the line 0
+                    count+=1
                     pass
-                else:
+                else: #do distance calculation in the rest
                     obj = calc_all(sent1,sent2)[2:]
-                    obj.append(num)
-                    if clase:
+                    obj.append(count)
+                    if clase=='1':
                         obj.append(1)
                     else:
                         obj.append(0)
+                    print(len(data.columns))
                     data = data.append(Series(obj, index=data.columns), ignore_index=True)
+                    count+=1
+                    print(len(data.columns))
+                    input()
             except:
-                exceptions.append(num)
+                exceptions.append(count)
+
+            data.to_csv(out_path)
 
     if not out_path:
         out_path = os.path.abspath(file_path)[:os.path.abspath(file_path).rfind('.')]+'.csv'
 
     data.to_csv(out_path)
 
-    #TODO completar las dos primeras líneas para el estandar de sklearn
+    #TODO completar las dos primeras líneas para el estandar Bunch de sklearn
 
     return True
 
