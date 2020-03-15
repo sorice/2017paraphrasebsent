@@ -21,7 +21,7 @@ def return_obj(row, sent1, sent2, clase):
                 sec += str(item)+','
         
         #Append id for future analysis after classification
-        sec += str(row) 
+        sec += str(row)+','
         
         #Append class number
         if clase=='1':
