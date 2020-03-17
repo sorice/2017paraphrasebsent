@@ -1,10 +1,22 @@
 #!/usr/bin/env python 3.5
-
+"""
+The functions here are based on sklearn/datasets/_base.py
+functions.
+"""
+import sklearn
 import csv
 import numpy as np
-from sklearn.datasets.base import Bunch
+from sklearn.utils import Bunch
+import sys
+import pandas as pd
+from pandas import DataFrame, Series, read_csv
+import textsim
+from textsim.utils import calc_all
+import arff
+import os
 
-def load_msrpc(file_path='data/MSRPC-2004/msrpc_textsim.csv'):
+
+def load_msrpc(file_path):
     """Load the Microsoft Research Paraphrase Corpus"""
 
     with open(file_path) as csv_file:
@@ -13,82 +25,84 @@ def load_msrpc(file_path='data/MSRPC-2004/msrpc_textsim.csv'):
         n_samples = int(temp[0])
         n_features = int(temp[1])
         target_names = np.array(temp[2:4])
-        feature_names = np.array(temp[4:-1])
+        temp = next(data_file)
+        feature_names = np.array(temp[:-2])
         data = np.empty((n_samples, n_features))
-        target = np.empty((n_samples,), dtype=np.int)
+        target = np.empty((n_samples), dtype=np.int)
+        index = np.empty((n_samples), dtype=np.int)
 
+        temp = next(data_file)
         for i, ir in enumerate(data_file):
-            data[i] = np.asarray(ir[:-1], dtype=np.float)
-            if 'yes' in ir[-1]:
-                ir[-1] = 1
-            elif 'no' in ir[-1]:
-                ir[-1] = 0
+            data[i] = np.asarray(ir[:-2], dtype=np.float)
             target[i] = np.asarray(ir[-1], dtype=np.int)
+            index[i] = np.asarray(ir[-2], dtype=np.int)
 
-	#TODO: write the msrpc description file like iris.rst in ~/sklearn/datasets/descr
-        fdescr = ''
+        fdescr = 'Microsoft Research Corpus'
+        #TODO: write the msrpc description file like iris.rst in ~/sklearn/datasets/descr
 
     return Bunch(data=data, target=target,
                 target_names=target_names,
                 DESCR=fdescr,
-                feature_names=feature_names)
+                feature_names=feature_names), index
 
-import sys
-sys.path.append('/home/abelm')
-import pandas as pd
-from pandas import DataFrame, Series, read_table
-import textsim
-from textsim.utils import calc_all
-import arff
-import os
-
-def msrpc_to_csv(file_path='data/MSRPC-2004/msrpc_textsim.txt',out_path=''):
+def msrpc_to_csv(file_path ,out_path=''):
     """Convert corpus MSRP from TXT format to CSV format in sklearn Bunch
     structure.
-
-    Example:
-    >>> from scripts.datasets import msrpc_to_csv
-    >>> msrpc_to_csv('../data/MSRPC-2004/msrpc_paraphrase.txt','../data/result2.csv')
     """
 
+    if not file_path:
+        print('Not msrpc corpus path provided.')
+        return False
+
+    try:
+        df = read_csv(file_path,sep='\t')
+    except:
+        pass
+
     #Read Paraphrase Corpus
-    df = read_table(file_path,sep='\t')
-    data = []
     distances = []
     exceptions = []
 
+    #Structuring the columns
     for distance in sorted(textsim.__all_distances__.keys()):
         distances.append(distance)
     distances.append('id')
     distances.append('class')
+    
+    data = DataFrame(columns=distances)
 
-    for row in range(len(df)):
-        clase, ide1, ide2, sent1, sent2 = df.xs(row)
-        try:
-            obj = calc_all(sent1,sent2)[2:]
-            obj.append(row)
-            if clase:
-                obj.append('yes')
-            else:
-                obj.append('no')
-            data.append(obj)
-        except:
-            exceptions.append(row)
+    with open(file_path) as corp:
+        count = 0
+        for row in corp:
+            try:
+                clase, ide1, ide2, sent1, sent2 = row.split('\t')
+                if count == 0: #do not process the line 0
+                    count+=1
+                    pass
+                else: #do distance calculation in the rest
+                    obj = calc_all(sent1,sent2)[2:]
+                    obj.append(count)
+                    if clase=='1':
+                        obj.append(1)
+                    else:
+                        obj.append(0)
+                    print(len(data.columns))
+                    data = data.append(Series(obj, index=data.columns), ignore_index=True)
+                    count+=1
+                    print(len(data.columns))
+                    input()
+            except:
+                exceptions.append(count)
 
-    if out_path == '':
+            data.to_csv(out_path)
+
+    if not out_path:
         out_path = os.path.abspath(file_path)[:os.path.abspath(file_path).rfind('.')]+'.csv'
 
-    with open(out_path,'w') as corpus: #Open vector similarity feature corpus
-            corpus.write(str(len(data))+',')
-            corpus.write(str(len(distances)-1)+',')
-            corpus.write('Paraph,Non,')
-            for distance in distances:
-                corpus.write(distance+',')
-            corpus.write('\n')
-            for instance in data:
-                corpus.write(str(instance)[1:-1]+'\n')
+    data.to_csv(out_path)
+    #TODO completar las dos primeras líneas para el estandar Bunch de sklearn
 
-    return
+    return True
 
 def msrpc_to_arff(file_path='data/MSRPC-2004/msrpc_textsim.txt',out_path=''):
     """Convert corpus MSRP from TXT format to ARFF Weka format."""
